@@ -6,7 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:notu/models/book.dart';
 
 class AddBookScreen extends StatefulWidget {
-  final Function(Book) onAddBook;
+  final void Function(Book) onAddBook;
 
   const AddBookScreen({super.key, required this.onAddBook});
 

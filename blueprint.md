@@ -1,47 +1,44 @@
-
 # NOTU - A Minimalist Note-Taking App
 
 ## Overview
 
-NOTU is a minimalist note-taking application designed for writers, students, and anyone who needs a simple, elegant tool to capture their thoughts and ideas. The app is built with Flutter and uses a local SQLite database for data persistence, ensuring that your notes are always available, even offline.
+NOTU is a minimalist note-taking application designed for simplicity and ease of use. It allows users to create and organize their notes into books and chapters, with support for both Markdown and HTML content. The app features a clean, modern interface with a focus on readability and a distraction-free writing experience.
 
-## Style, Design, and Features
+## Features
+
+### Core Functionality
+
+*   **Book and Chapter Organization:** Users can create books to group their notes and add chapters within each book.
+*   **Markdown and HTML Support:** Chapters can be written in either Markdown or HTML, providing flexibility for different types of content.
+*   **Rich Text Editing:** The app includes a rich text editor for a seamless writing experience.
+*   **Image Support:** Users can add images to their notes.
+*   **Local Storage:** All data is stored locally on the device for privacy and offline access.
+*   **Todo List:** Users can create and manage a simple to-do list.
 
 ### Design and Theming
 
-*   **Modern & Minimalist UI:** The app features a clean and modern design with a focus on readability and ease of use.
-*   **Light & Dark Modes:** A user-selectable theme allows for switching between light and dark modes.
-*   **Custom Fonts:** The app uses Google Fonts to provide a unique and elegant typography.
-    *   **Headlines:** `Playfair Display`
-    *   **Titles:** `Lato`
-    *   **Body:** `Open Sans`
-*   **Consistent Color Scheme:** A consistent color scheme is used throughout the app, with `Colors.teal` as the primary seed color.
-*   **Smooth Transitions:** The `animations` package is used to provide beautiful and seamless transitions between screens.
-*   **Polished Add Book Screen:** The "Add Book" screen has been redesigned with a modern and polished look, featuring a `Card` layout, improved spacing, and a circular avatar for the thumbnail preview.
+*   **Minimalist UI:** The user interface is designed to be clean and intuitive, with a focus on content.
+*   **Light and Dark Themes:** The app includes both light and dark themes to suit user preferences.
+*   **Customizable Fonts:** Users can choose from a selection of fonts to personalize their reading experience.
 
-### Core Features
+### Import and Export
 
-*   **Offline First:** All data is stored locally in an SQLite database, making the app fully functional offline.
-*   **Books and Chapters:** Organize your notes into books and chapters.
-*   **Book Thumbnails:** Users can add a thumbnail image to each book, which is displayed in a beautiful grid view.
-*   **CRUD Operations:** Full Create, Read, Update, and Delete functionality for both books and chapters.
-*   **Markdown and HTML Support:** Chapter content can be written in either Markdown or HTML/CSS/JS.
-    *   The `webview_flutter` package is used to render HTML content.
-*   **Polished UX:**
-    *   **Snackbars:** Provide visual feedback for actions like adding, deleting, and updating items.
-    *   **Haptic Feedback:** Subtle haptic feedback enhances the user experience.
-    *   **Empty States:** Beautiful and informative "empty state" screens guide the user when there is no content.
-*   **State Management:** The app uses a combination of `StatefulWidget` and `ChangeNotifierProvider` for state management.
+*   **Book Export:** Users can export individual books as JSON files, including all chapters and content.
+*   **Book Import:** Users can import books from JSON files, allowing for easy backup and sharing.
+*   **PDF Export:** Chapters can be saved as PDF files for printing or sharing.
+*   **Printing:** Chapters can be printed directly from the app.
 
 ## Current Plan
 
-*   **Implement HTML/CSS/JS Support:** The user has requested the ability to add notes in HTML, CSS, and JavaScript. This involved:
-    *   Adding the `webview_flutter` dependency.
-    *   Updating the `Chapter` model and `DatabaseHelper` to include a `contentType` field.
-    *   Modifying the `AddChapterScreen` to allow users to select the content type.
-    *   Updating the `ChapterDetailsScreen` to render HTML content using a `WebView`.
-*   **Enhance Visual Design:** The `AddBookScreen` has been redesigned for a more modern and polished user experience.
-*   **Next Steps:**
-    *   Continue to refine the visual design of the app.
-    *   Add more interactive elements and animations.
-    *   Implement a search functionality to easily find notes.
+This is the first version of the application, and the following features have been implemented:
+
+*   Created the basic project structure.
+*   Implemented the main screen with a grid view of books.
+*   Added the ability to add, edit, and delete books.
+*   Implemented the book details screen with a list of chapters.
+*   Added the ability to add, edit, and delete chapters.
+*   Implemented the chapter details screen with support for Markdown and HTML content.
+*   Added a settings screen with a theme toggle.
+*   Implemented book import and export functionality.
+*   Implemented chapter PDF export and printing.
+*   Added a to-do list feature with search functionality.

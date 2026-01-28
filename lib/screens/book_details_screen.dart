@@ -1,6 +1,5 @@
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:notu/models/book.dart';
 import 'package:notu/models/chapter.dart';
 import 'package:notu/screens/add_chapter_screen.dart';
@@ -9,7 +8,7 @@ import 'package:notu/utils/database_helper.dart';
 
 class BookDetailsScreen extends StatefulWidget {
   final Book book;
-  final Function(Book) onBookUpdate;
+  final void Function(Book) onBookUpdate;
   final VoidCallback onBookDelete;
 
   const BookDetailsScreen({super.key, required this.book, required this.onBookUpdate, required this.onBookDelete});
@@ -69,19 +68,6 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.book.title),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.edit),
-            onPressed: () => _showEditBookDialog(context, widget.book),
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete),
-            onPressed: () {
-              widget.onBookDelete();
-              Navigator.pop(context);
-            },
-          ),
-        ],
       ),
       body: FutureBuilder<List<Chapter>>(
         future: _chaptersFuture,
@@ -107,10 +93,7 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
                     ),
                   );
                 },
-                onLongPress: () {
-                  HapticFeedback.heavyImpact();
-                  _showChapterContextMenu(context, chapter);
-                },
+                onLongPress: () => _showChapterContextMenu(context, chapter, _getTapPosition(context)),
               );
             },
           );
@@ -129,6 +112,11 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
         icon: const Icon(Icons.add),
       ),
     );
+  }
+
+  Offset _getTapPosition(BuildContext context) {
+    final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+    return overlay.localToGlobal(Offset.zero);
   }
 
   Widget _buildEmptyState() {
@@ -150,12 +138,14 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
     );
   }
 
-  void _showChapterContextMenu(BuildContext context, Chapter chapter) {
-    final RenderBox renderBox = context.findRenderObject() as RenderBox;
-    final offset = renderBox.localToGlobal(Offset.zero);
+  void _showChapterContextMenu(BuildContext context, Chapter chapter, Offset tapPosition) {
+    final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
     showMenu(
       context: context,
-      position: RelativeRect.fromLTRB(offset.dx, offset.dy + renderBox.size.height, offset.dx + renderBox.size.width, offset.dy + renderBox.size.height),
+      position: RelativeRect.fromRect(
+        Rect.fromLTWH(tapPosition.dx, tapPosition.dy, 0, 0),
+        Offset.zero & overlay.size,
+      ),
       items: [
         PopupMenuItem(
           child: const Text('Edit'),
@@ -166,40 +156,6 @@ class _BookDetailsScreenState extends State<BookDetailsScreen> {
           onTap: () => _deleteChapter(chapter.id!),
         ),
       ],
-    );
-  }
-
-
-  void _showEditBookDialog(BuildContext context, Book book) {
-    final titleController = TextEditingController(text: book.title);
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: const Text('Edit Book'),
-          content: TextField(
-            controller: titleController,
-            decoration: const InputDecoration(labelText: 'Title'),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                final newTitle = titleController.text;
-                if (newTitle.isNotEmpty) {
-                  final updatedBook = Book(id: book.id, title: newTitle);
-                  widget.onBookUpdate(updatedBook);
-                  Navigator.pop(context);
-                }
-              },
-              child: const Text('Save'),
-            ),
-          ],
-        );
-      },
     );
   }
 

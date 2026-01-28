@@ -3,6 +3,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:notu/screens/settings_screen.dart';
+import 'package:notu/screens/todo_screen.dart';
+import 'package:notu/utils/book_importer_exporter.dart';
 import 'package:provider/provider.dart';
 import 'package:animations/animations.dart';
 
@@ -107,6 +110,7 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   late Future<List<Book>> _booksFuture;
   final dbHelper = DatabaseHelper();
+  final bookImporterExporter = BookImporterExporter();
 
   @override
   void initState() {
@@ -114,38 +118,70 @@ class _MyHomePageState extends State<MyHomePage> {
     _booksFuture = dbHelper.getBooks();
   }
 
-  void _addBook(Book book) async {
-    await dbHelper.insertBook(book);
-    setState(() {
-      _booksFuture = dbHelper.getBooks();
+  void _addBook(Book book) {
+    dbHelper.insertBook(book).then((_) {
+      setState(() {
+        _booksFuture = dbHelper.getBooks();
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Book added!')),
+        );
+      }
     });
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Book added!')),
-      );
+  }
+
+  void _deleteBook(int id) {
+    dbHelper.deleteBook(id).then((_) {
+      setState(() {
+        _booksFuture = dbHelper.getBooks();
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Book deleted!')),
+        );
+      }
+    });
+  }
+
+  void _editBook(Book book) {
+    dbHelper.updateBook(book).then((_) {
+      setState(() {
+        _booksFuture = dbHelper.getBooks();
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Book updated!')),
+        );
+      }
+    });
+  }
+
+  void _importBook() async {
+    final success = await bookImporterExporter.importBook();
+    if (success) {
+      setState(() {
+        _booksFuture = dbHelper.getBooks();
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Book imported!')),
+        );
+      }
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Import failed.')),
+        );
+      }
     }
   }
 
-  void _deleteBook(int id) async {
-    await dbHelper.deleteBook(id);
-    setState(() {
-      _booksFuture = dbHelper.getBooks();
-    });
+  void _exportBook(Book book) async {
+    final success = await bookImporterExporter.exportBook(book);
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Book deleted!')),
-      );
-    }
-  }
-
-  void _editBook(Book book) async {
-    await dbHelper.updateBook(book);
-    setState(() {
-      _booksFuture = dbHelper.getBooks();
-    });
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Book updated!')),
+        SnackBar(content: Text(success ? 'Book exported!' : 'Export failed.')),
       );
     }
   }
@@ -158,9 +194,27 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Text('NOTU', style: Theme.of(context).appBarTheme.titleTextStyle,),
         actions: [
           IconButton(
+            icon: const Icon(Icons.check_box_outlined),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const TodoScreen()),
+              );
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.brightness_6),
             onPressed: () {
               Provider.of<ThemeProvider>(context, listen: false).toggleTheme();
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.settings),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const SettingsScreen()),
+              );
             },
           ),
         ],
@@ -198,28 +252,35 @@ class _MyHomePageState extends State<MyHomePage> {
               itemBuilder: (context, index) {
                 final book = books[index];
                 return GestureDetector(
-                  onLongPress: () => _showBookContextMenu(context, book),
+                  onLongPressStart: (details) => _showBookContextMenu(context, book, details.globalPosition),
                   child: OpenContainer(
-                    transitionType: ContainerTransitionType.fade,
-                    transitionDuration: const Duration(milliseconds: 500),
-                    closedElevation: 5,
-                    closedShape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    closedBuilder: (context, action) => GridTile(
-                      footer: GridTileBar(
-                        backgroundColor: Colors.black45,
-                        title: Text(book.title, style: const TextStyle(color: Colors.white),),
-                      ),
-                      child: ClipRRect(
+                      transitionType: ContainerTransitionType.fade,
+                      transitionDuration: const Duration(milliseconds: 500),
+                      closedElevation: 5,
+                      closedShape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(15),
-                        child: book.thumbnail != null
-                            ? Image.file(File(book.thumbnail!), fit: BoxFit.cover)
-                            : Container(color: Colors.grey[300]),
                       ),
-                    ),
-                    openBuilder: (context, action) => BookDetailsScreen(book: book, onBookUpdate: _editBook, onBookDelete: () => _deleteBook(book.id!)),
-                  ),
+                      closedBuilder: (BuildContext context, void Function() action) {
+                        return GridTile(
+                          footer: GridTileBar(
+                            backgroundColor: Colors.black45,
+                            title: Text(book.title, style: const TextStyle(color: Colors.white),),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(15),
+                            child: book.thumbnail != null
+                                ? Image.file(File(book.thumbnail!), fit: BoxFit.cover)
+                                : Container(color: Colors.grey[300]),
+                          ),
+                        );
+                      },
+                      openBuilder: (BuildContext context, void Function() action) {
+                        return BookDetailsScreen(
+                          book: book,
+                          onBookUpdate: _editBook,
+                          onBookDelete: () => _deleteBook(book.id!),
+                        );
+                      }),
                 );
               },
             );
@@ -231,7 +292,9 @@ class _MyHomePageState extends State<MyHomePage> {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (context) => AddBookScreen(onAddBook: _addBook),
+              builder: (context) {
+                return AddBookScreen(onAddBook: _addBook);
+              },
             ),
           );
         },
@@ -260,23 +323,55 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  void _showBookContextMenu(BuildContext context, Book book) {
-    final RenderBox renderBox = context.findRenderObject() as RenderBox;
-    final offset = renderBox.localToGlobal(Offset.zero);
-    showMenu(
+  void _handleContextMenuSelection(String value, Book book) {
+    switch (value) {
+      case 'edit':
+        _showEditBookDialog(context, book);
+        break;
+      case 'delete':
+        _deleteBook(book.id!);
+        break;
+      case 'export':
+        _exportBook(book);
+        break;
+      case 'import':
+        _importBook();
+        break;
+    }
+  }
+
+  void _showBookContextMenu(BuildContext context, Book book, Offset tapPosition) {
+    final RenderBox overlay = Overlay.of(context).context.findRenderObject() as RenderBox;
+    showMenu<String>(
       context: context,
-      position: RelativeRect.fromLTRB(offset.dx, offset.dy + renderBox.size.height, offset.dx + renderBox.size.width, offset.dy + renderBox.size.height),
-      items: [
-        PopupMenuItem(
-          child: const Text('Edit'),
-          onTap: () => _showEditBookDialog(context, book),
+      position: RelativeRect.fromRect(
+        Rect.fromLTWH(tapPosition.dx, tapPosition.dy, 0, 0),
+        Offset.zero & overlay.size,
+      ),
+      items: <PopupMenuEntry<String>>[
+        const PopupMenuItem(
+          value: 'edit',
+          child: Text('Edit'),
         ),
-        PopupMenuItem(
-          child: const Text('Delete'),
-          onTap: () => _deleteBook(book.id!),
+        const PopupMenuItem(
+          value: 'delete',
+          child: Text('Delete'),
+        ),
+        const PopupMenuDivider(),
+        const PopupMenuItem(
+          value: 'export',
+          child: Text('Export'),
+        ),
+        const PopupMenuItem(
+          value: 'import',
+          child: Text('Import'),
         ),
       ],
-    );
+    ).then((value) {
+      if (value != null) {
+        _handleContextMenuSelection(value, book);
+      }
+    });
   }
 
   void _showEditBookDialog(BuildContext context, Book book) {
@@ -288,34 +383,38 @@ class _MyHomePageState extends State<MyHomePage> {
       builder: (context) {
         return AlertDialog(
           title: const Text('Edit Book'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              if (thumbnailPath != null)
-                Image.file(
-                  File(thumbnailPath!),
-                  height: 150,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
-                ),
-              ElevatedButton.icon(
-                onPressed: () async {
-                  final picker = ImagePicker();
-                  final pickedFile = await picker.pickImage(source: ImageSource.gallery);
-                  if (pickedFile != null) {
-                    setState(() {
-                      thumbnailPath = pickedFile.path;
-                    });
-                  }
-                },
-                icon: const Icon(Icons.image),
-                label: const Text('Change Thumbnail'),
-              ),
-              TextField(
-                controller: titleController,
-                decoration: const InputDecoration(labelText: 'Title'),
-              ),
-            ],
+          content: StatefulBuilder(
+            builder: (BuildContext context, StateSetter setState) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (thumbnailPath != null)
+                    Image.file(
+                      File(thumbnailPath!),
+                      height: 150,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
+                  ElevatedButton.icon(
+                    onPressed: () async {
+                      final picker = ImagePicker();
+                      final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+                      if (pickedFile != null) {
+                        setState(() {
+                          thumbnailPath = pickedFile.path;
+                        });
+                      }
+                    },
+                    icon: const Icon(Icons.image),
+                    label: const Text('Change Thumbnail'),
+                  ),
+                  TextField(
+                    controller: titleController,
+                    decoration: const InputDecoration(labelText: 'Title'),
+                  ),
+                ],
+              );
+            },
           ),
           actions: [
             TextButton(

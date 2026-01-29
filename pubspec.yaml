@@ -3,7 +3,7 @@ name: notu
 description: "A new Flutter project."
 publish_to: 'none'
 
-version: 3.0.3+4
+version: 3.0.4+5
 
 environment:
   sdk: ^3.9.0
@@ -28,6 +28,8 @@ dependencies:
   sqflite_common_ffi: ^2.3.7+1
   intl: ^0.20.2
   flutter_native_splash: ^2.4.7
+  flutter_quill: ^11.5.0
+  markdown_quill: ^4.3.0
 
 dev_dependencies:
   flutter_test:

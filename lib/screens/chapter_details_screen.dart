@@ -32,9 +32,39 @@ class _ChapterDetailsScreenState extends State<ChapterDetailsScreen> {
     if (widget.chapter.contentType == ContentType.html) {
       _webViewController = WebViewController()
         ..setJavaScriptMode(JavaScriptMode.unrestricted)
-        ..setBackgroundColor(Colors.transparent) // Make webview background transparent
-        ..loadHtmlString(widget.chapter.content);
+        ..setBackgroundColor(Colors.transparent);
     }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (widget.chapter.contentType == ContentType.html && !_isEditing) {
+      _loadThemedHtml(widget.chapter.content);
+    }
+  }
+
+  void _loadThemedHtml(String content) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    String themedContent = content;
+
+    if (isDarkMode) {
+      const String style = '''
+      <style>
+        body, h1, h2, h3, h4, h5, h6, p, li, blockquote, b, strong, i, em {
+          color: white !important;
+        }
+      </style>
+      ''';
+
+      final headTag = RegExp(r'<head>', caseSensitive: false);
+      if (themedContent.contains(headTag)) {
+        themedContent = themedContent.replaceFirst(headTag, '<head>$style');
+      } else {
+        themedContent = style + themedContent;
+      }
+    }
+    _webViewController.loadHtmlString(themedContent);
   }
 
   void _toggleEditing() {
@@ -54,7 +84,7 @@ class _ChapterDetailsScreenState extends State<ChapterDetailsScreen> {
     await dbHelper.updateChapter(updatedChapter);
     widget.onChapterUpdate(updatedChapter);
     if (widget.chapter.contentType == ContentType.html) {
-      _webViewController.loadHtmlString(_contentController.text);
+      _loadThemedHtml(_contentController.text);
     }
     _toggleEditing();
   }
@@ -63,8 +93,6 @@ class _ChapterDetailsScreenState extends State<ChapterDetailsScreen> {
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final blockquoteColor = isDarkMode ? Colors.grey[700] : Colors.grey[300];
-
-    // Use consistent padding for all content types
     final bodyPadding = const EdgeInsets.all(16.0);
 
     return Scaffold(

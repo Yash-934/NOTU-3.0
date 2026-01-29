@@ -1,5 +1,6 @@
 
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
@@ -8,6 +9,7 @@ import 'package:notu/screens/todo_screen.dart';
 import 'package:notu/utils/book_importer_exporter.dart';
 import 'package:provider/provider.dart';
 import 'package:animations/animations.dart';
+import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'package:notu/models/book.dart';
 import 'package:notu/screens/add_book_screen.dart';
@@ -15,6 +17,10 @@ import 'package:notu/screens/book_details_screen.dart';
 import 'package:notu/utils/database_helper.dart';
 
 void main() {
+  if (kIsWeb) {
+    // Change default factory on the web
+    databaseFactory = databaseFactoryFfi;
+  }
   runApp(
     ChangeNotifierProvider(
       create: (context) => ThemeProvider(),
@@ -115,14 +121,18 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    _booksFuture = dbHelper.getBooks();
+    _refreshBookList();
+  }
+
+  void _refreshBookList() {
+    setState(() {
+      _booksFuture = dbHelper.getBooks();
+    });
   }
 
   void _addBook(Book book) {
     dbHelper.insertBook(book).then((_) {
-      setState(() {
-        _booksFuture = dbHelper.getBooks();
-      });
+      _refreshBookList();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Book added!')),
@@ -133,9 +143,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _deleteBook(int id) {
     dbHelper.deleteBook(id).then((_) {
-      setState(() {
-        _booksFuture = dbHelper.getBooks();
-      });
+      _refreshBookList();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Book deleted!')),
@@ -146,9 +154,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _editBook(Book book) {
     dbHelper.updateBook(book).then((_) {
-      setState(() {
-        _booksFuture = dbHelper.getBooks();
-      });
+      _refreshBookList();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Book updated!')),
@@ -160,9 +166,7 @@ class _MyHomePageState extends State<MyHomePage> {
   void _importBook() async {
     final success = await bookImporterExporter.importBook();
     if (success) {
-      setState(() {
-        _booksFuture = dbHelper.getBooks();
-      });
+      _refreshBookList();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Book imported!')),
@@ -194,6 +198,10 @@ class _MyHomePageState extends State<MyHomePage> {
         title: Text('NOTU', style: Theme.of(context).appBarTheme.titleTextStyle,),
         actions: [
           IconButton(
+            icon: const Icon(Icons.input),
+            onPressed: _importBook,
+          ),
+          IconButton(
             icon: const Icon(Icons.check_box_outlined),
             onPressed: () {
               Navigator.push(
@@ -210,11 +218,12 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
           IconButton(
             icon: const Icon(Icons.settings),
-            onPressed: () {
-              Navigator.push(
+            onPressed: () async {
+              await Navigator.push(
                 context,
                 MaterialPageRoute(builder: (context) => const SettingsScreen()),
               );
+              _refreshBookList();
             },
           ),
         ],
@@ -334,9 +343,6 @@ class _MyHomePageState extends State<MyHomePage> {
       case 'export':
         _exportBook(book);
         break;
-      case 'import':
-        _importBook();
-        break;
     }
   }
 
@@ -361,10 +367,6 @@ class _MyHomePageState extends State<MyHomePage> {
         const PopupMenuItem(
           value: 'export',
           child: Text('Export'),
-        ),
-        const PopupMenuItem(
-          value: 'import',
-          child: Text('Import'),
         ),
       ],
     ).then((value) {

@@ -32,8 +32,31 @@ class _ChapterDetailsScreenState extends State<ChapterDetailsScreen> {
     if (widget.chapter.contentType == ContentType.html) {
       _webViewController = WebViewController()
         ..setJavaScriptMode(JavaScriptMode.unrestricted)
-        ..loadHtmlString(widget.chapter.content);
+        ..setBackgroundColor(const Color(0x00000000)) // Make background transparent
+        ..loadHtmlString(_getHtmlContent());
     }
+  }
+
+  String _getHtmlContent() {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final textColor = isDarkMode ? 'white' : 'black';
+    return """
+      <html>
+        <head>
+          <style>
+            body {
+              background-color: transparent;
+              color: $textColor;
+              font-family: sans-serif;
+              font-size: 16px;
+            }
+          </style>
+        </head>
+        <body>
+          ${widget.chapter.content}
+        </body>
+      </html>
+    """;
   }
 
   void _toggleEditing() {
@@ -53,7 +76,7 @@ class _ChapterDetailsScreenState extends State<ChapterDetailsScreen> {
     await dbHelper.updateChapter(updatedChapter);
     widget.onChapterUpdate(updatedChapter);
     if (widget.chapter.contentType == ContentType.html) {
-      _webViewController.loadHtmlString(updatedChapter.content);
+      _webViewController.loadHtmlString(_getHtmlContent());
     }
     _toggleEditing();
   }

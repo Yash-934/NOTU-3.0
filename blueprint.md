@@ -42,3 +42,20 @@ This is the first version of the application, and the following features have be
 *   Implemented book import and export functionality.
 *   Implemented chapter PDF export and printing.
 *   Added a to-do list feature with search functionality.
+
+## Troubleshooting and Solutions
+
+This section documents issues encountered and the solutions implemented to resolve them.
+
+### 1. Backup/Export/Import/Restore Failures
+
+*   **Problem:** The backup, export, import, and restore functionalities were failing due to a combination of issues related to modern Android security features, platform-specific file handling, and incorrect database ID management.
+*   **Solution:**
+    1.  **Scoped Storage Compatibility:** Replaced the outdated file-saving logic with `FilePicker.platform.saveFile()`. This method uses the system's file picker, which respects platform-specific permissions and allows the user to choose the save location.
+    2.  **Platform-Specific File Reading:** Implemented platform-aware logic using `kIsWeb` to handle file reading. For web, the file is read from memory (`result.files.single.bytes`). For mobile (Android/iOS), the file is read from the path provided by the file picker (`File(result.files.single.path!).readAsString()`).
+    3.  **Database ID Management:** Modified the import and restore logic to treat imported data as new entries. Instead of using the IDs from the backup file, the app now removes the old IDs and lets the database assign new, auto-incremented IDs. A map is used to maintain the relationship between the old and new book IDs, ensuring that chapters are correctly associated with their parent books.
+
+### 2. Home Screen Not Refreshing After Restore
+
+*   **Problem:** After restoring a backup from the settings screen, the home screen did not automatically update to display the restored books.
+*   **Solution:** Modified the navigation to the settings screen to be an `async` operation. By using `await Navigator.push(...)`, the app now waits for the settings screen to be closed. After it's closed, a function is called to refresh the book list from the database, which updates the UI.

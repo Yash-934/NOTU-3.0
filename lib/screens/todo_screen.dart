@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:notu/models/todo.dart';
 import 'package:notu/utils/database_helper.dart';
 
@@ -28,7 +29,7 @@ class _TodoScreenState extends State<TodoScreen> {
 
   void _addTodo(String title) async {
     if (title.isNotEmpty) {
-      await dbHelper.insertTodo(Todo(title: title));
+      await dbHelper.insertTodo(Todo(title: title, createdAt: DateTime.now()));
       setState(() {
         _todosFuture = dbHelper.getTodos();
       });
@@ -36,7 +37,7 @@ class _TodoScreenState extends State<TodoScreen> {
   }
 
   void _toggleTodo(Todo todo) async {
-    await dbHelper.updateTodo(Todo(id: todo.id, title: todo.title, isDone: !todo.isDone));
+    await dbHelper.updateTodo(Todo(id: todo.id, title: todo.title, isDone: !todo.isDone, createdAt: todo.createdAt));
     setState(() {
       _todosFuture = dbHelper.getTodos();
     });
@@ -47,6 +48,15 @@ class _TodoScreenState extends State<TodoScreen> {
     setState(() {
       _todosFuture = dbHelper.getTodos();
     });
+  }
+
+  void _updateTodoTitle(Todo todo, String newTitle) async {
+    if (newTitle.isNotEmpty) {
+      await dbHelper.updateTodo(Todo(id: todo.id, title: newTitle, isDone: todo.isDone, createdAt: todo.createdAt));
+      setState(() {
+        _todosFuture = dbHelper.getTodos();
+      });
+    }
   }
 
   @override
@@ -87,20 +97,22 @@ class _TodoScreenState extends State<TodoScreen> {
                   itemCount: todos.length,
                   itemBuilder: (context, index) {
                     final todo = todos[index];
-                    return ListTile(
-                      title: Text(
-                        todo.title,
-                        style: TextStyle(
-                          decoration: todo.isDone ? TextDecoration.lineThrough : TextDecoration.none,
+                    return GestureDetector(
+                      onLongPress: () => _showEditDeleteDialog(todo),
+                      child: ListTile(
+                        title: Text(
+                          todo.title,
+                          style: TextStyle(
+                            decoration: todo.isDone ? TextDecoration.lineThrough : TextDecoration.none,
+                            decorationColor: Colors.red,
+                            decorationThickness: 2.0,
+                          ),
                         ),
-                      ),
-                      leading: Checkbox(
-                        value: todo.isDone,
-                        onChanged: (value) => _toggleTodo(todo),
-                      ),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.delete),
-                        onPressed: () => _deleteTodo(todo.id!),
+                        subtitle: Text(DateFormat.yMMMd().add_jm().format(todo.createdAt)),
+                        leading: Checkbox(
+                          value: todo.isDone,
+                          onChanged: (value) => _toggleTodo(todo),
+                        ),
                       ),
                     );
                   },
@@ -110,9 +122,10 @@ class _TodoScreenState extends State<TodoScreen> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
+      floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showAddTodoDialog(),
-        child: const Icon(Icons.add),
+        icon: const Icon(Icons.add),
+        label: const Text('Add To-do'),
       ),
     );
   }
@@ -139,6 +152,67 @@ class _TodoScreenState extends State<TodoScreen> {
                 Navigator.pop(context);
               },
               child: const Text('Add'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showEditDeleteDialog(Todo todo) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(todo.title),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.edit),
+                title: const Text('Edit'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _showEditTodoDialog(todo);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.delete),
+                title: const Text('Delete'),
+                onTap: () {
+                  _deleteTodo(todo.id!);
+                  Navigator.pop(context);
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showEditTodoDialog(Todo todo) {
+    final controller = TextEditingController(text: todo.title);
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Edit To-do'),
+          content: TextField(
+            controller: controller,
+            decoration: const InputDecoration(hintText: 'Enter to-do title'),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                _updateTodoTitle(todo, controller.text);
+                Navigator.pop(context);
+              },
+              child: const Text('Update'),
             ),
           ],
         );

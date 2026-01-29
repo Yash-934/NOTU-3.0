@@ -1,6 +1,9 @@
+
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:notu/models/book.dart';
 import 'package:notu/models/chapter.dart';
 import 'package:notu/utils/database_helper.dart';
@@ -23,17 +26,15 @@ class BackupService {
       };
 
       final String jsonString = jsonEncode(backupData);
+      final Uint8List fileBytes = Uint8List.fromList(utf8.encode(jsonString));
 
-      String? outputPath = await FilePicker.platform.getDirectoryPath();
-      if (outputPath == null) {
-        return false;
-      }
+      String? outputFile = await FilePicker.platform.saveFile(
+        dialogTitle: 'Please select an output file:',
+        fileName: 'notu_backup_${DateTime.now().toIso8601String()}.json',
+        bytes: fileBytes,
+      );
 
-      final String fileName = 'notu_backup_${DateTime.now().toIso8601String()}.json';
-      final File file = File('$outputPath/$fileName');
-      await file.writeAsString(jsonString);
-
-      return true;
+      return outputFile != null;
     } catch (e) {
       return false;
     }
@@ -46,12 +47,21 @@ class BackupService {
         allowedExtensions: ['json'],
       );
 
-      if (result == null || result.files.single.path == null) {
+      if (result == null) {
         return false;
       }
 
-      final File file = File(result.files.single.path!);
-      final String jsonString = await file.readAsString();
+      String jsonString;
+      if (kIsWeb) {
+        if (result.files.single.bytes == null) return false;
+        final fileBytes = result.files.single.bytes!;
+        jsonString = utf8.decode(fileBytes);
+      } else {
+        if (result.files.single.path == null) return false;
+        final file = File(result.files.single.path!);
+        jsonString = await file.readAsString();
+      }
+
       final Map<String, dynamic> backupData = jsonDecode(jsonString);
 
       final List<dynamic> bookList = backupData['books'];
@@ -60,12 +70,22 @@ class BackupService {
       await dbHelper.deleteAllBooks();
       await dbHelper.deleteAllChapters();
 
+      final Map<int, int> oldToNewBookIds = {};
+
       for (final bookMap in bookList) {
-        await dbHelper.insertBook(Book.fromMap(bookMap));
+        final oldBookId = bookMap['id'];
+        final newBook = Book.fromMap(bookMap..remove('id'));
+        final newBookId = await dbHelper.insertBook(newBook);
+        oldToNewBookIds[oldBookId] = newBookId;
       }
 
       for (final chapterMap in chapterList) {
-        await dbHelper.insertChapter(Chapter.fromMap(chapterMap));
+        final oldBookId = chapterMap['bookId'];
+        final newBookId = oldToNewBookIds[oldBookId];
+        if (newBookId != null) {
+          final newChapter = Chapter.fromMap(chapterMap..remove('id'))..bookId = newBookId;
+          await dbHelper.insertChapter(newChapter);
+        }
       }
 
       return true;

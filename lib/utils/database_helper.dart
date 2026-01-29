@@ -28,7 +28,7 @@ class DatabaseHelper {
     String path = join(documentsDirectory.path, 'notu.db');
     return await openDatabase(
       path,
-      version: 4, // Incremented version to trigger onUpgrade
+      version: 5, // Incremented version to trigger onUpgrade
       onCreate: _onCreate,
       onUpgrade: _onUpgrade,
     );
@@ -60,7 +60,8 @@ class DatabaseHelper {
       CREATE TABLE todos(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         title TEXT,
-        isDone INTEGER DEFAULT 0
+        isDone INTEGER DEFAULT 0,
+        createdAt TEXT
       )
     ''');
   }
@@ -74,6 +75,9 @@ class DatabaseHelper {
     }
     if (oldVersion < 4) {
       await _createTodoTable(db);
+    }
+    if (oldVersion < 5) {
+      await db.execute('ALTER TABLE todos ADD COLUMN createdAt TEXT');
     }
   }
 
@@ -173,7 +177,7 @@ class DatabaseHelper {
 
   Future<List<Todo>> getTodos() async {
     Database db = await database;
-    final List<Map<String, dynamic>> maps = await db.query('todos');
+    final List<Map<String, dynamic>> maps = await db.query('todos', orderBy: 'createdAt DESC');
     return List.generate(maps.length, (i) {
       return Todo.fromMap(maps[i]);
     });

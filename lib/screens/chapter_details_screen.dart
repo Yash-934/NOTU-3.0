@@ -32,23 +32,37 @@ class _ChapterDetailsScreenState extends State<ChapterDetailsScreen> {
     if (widget.chapter.contentType == ContentType.html) {
       _webViewController = WebViewController()
         ..setJavaScriptMode(JavaScriptMode.unrestricted)
-        ..setBackgroundColor(const Color(0x00000000)) // Make background transparent
-        ..loadHtmlString(_getHtmlContent());
+        ..setBackgroundColor(Colors.transparent); // Make webview background transparent
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Load the initial HTML content here where context is available
+    if (widget.chapter.contentType == ContentType.html) {
+       _webViewController.loadHtmlString(_getHtmlContent());
     }
   }
 
   String _getHtmlContent() {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDarkMode = theme.brightness == Brightness.dark;
     final textColor = isDarkMode ? 'white' : 'black';
+
+    // By setting the background to transparent, the webview will show the underlying Scaffold background.
     return """
       <html>
         <head>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <style>
             body {
-              background-color: transparent;
+              background-color: transparent; /* Make HTML background transparent */
               color: $textColor;
               font-family: sans-serif;
               font-size: 16px;
+              margin: 0;
+              padding: 0; /* Let Flutter handle the padding */
             }
           </style>
         </head>
@@ -85,6 +99,9 @@ class _ChapterDetailsScreenState extends State<ChapterDetailsScreen> {
   Widget build(BuildContext context) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final blockquoteColor = isDarkMode ? Colors.grey[700] : Colors.grey[300];
+
+    // Use consistent padding for all content types
+    final bodyPadding = const EdgeInsets.all(16.0);
 
     return Scaffold(
       appBar: AppBar(
@@ -129,7 +146,7 @@ class _ChapterDetailsScreenState extends State<ChapterDetailsScreen> {
         ],
       ),
       body: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: bodyPadding,
         child: _isEditing
             ? TextField(
                 controller: _contentController,
@@ -144,9 +161,9 @@ class _ChapterDetailsScreenState extends State<ChapterDetailsScreen> {
                 ? Markdown(
                     data: _contentController.text,
                     styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
-                      p: Theme.of(context).textTheme.bodyMedium!.copyWith(fontSize: 16),
-                      h1: Theme.of(context).textTheme.displayLarge!.copyWith(fontSize: 32),
-                      h2: Theme.of(context).textTheme.titleLarge!.copyWith(fontSize: 24),
+                      p: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 16),
+                      h1: Theme.of(context).textTheme.displayLarge?.copyWith(fontSize: 32),
+                      h2: Theme.of(context).textTheme.titleLarge?.copyWith(fontSize: 24),
                       blockquoteDecoration: BoxDecoration(
                         color: blockquoteColor,
                         borderRadius: BorderRadius.circular(8),

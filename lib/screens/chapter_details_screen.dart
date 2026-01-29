@@ -32,45 +32,9 @@ class _ChapterDetailsScreenState extends State<ChapterDetailsScreen> {
     if (widget.chapter.contentType == ContentType.html) {
       _webViewController = WebViewController()
         ..setJavaScriptMode(JavaScriptMode.unrestricted)
-        ..setBackgroundColor(Colors.transparent); // Make webview background transparent
+        ..setBackgroundColor(Colors.transparent) // Make webview background transparent
+        ..loadHtmlString(widget.chapter.content);
     }
-  }
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    // Load the initial HTML content here where context is available
-    if (widget.chapter.contentType == ContentType.html) {
-       _webViewController.loadHtmlString(_getHtmlContent());
-    }
-  }
-
-  String _getHtmlContent() {
-    final theme = Theme.of(context);
-    final isDarkMode = theme.brightness == Brightness.dark;
-    final textColor = isDarkMode ? 'white' : 'black';
-
-    // By setting the background to transparent, the webview will show the underlying Scaffold background.
-    return """
-      <html>
-        <head>
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <style>
-            body {
-              background-color: transparent; /* Make HTML background transparent */
-              color: $textColor;
-              font-family: sans-serif;
-              font-size: 16px;
-              margin: 0;
-              padding: 0; /* Let Flutter handle the padding */
-            }
-          </style>
-        </head>
-        <body>
-          ${widget.chapter.content}
-        </body>
-      </html>
-    """;
   }
 
   void _toggleEditing() {
@@ -90,7 +54,7 @@ class _ChapterDetailsScreenState extends State<ChapterDetailsScreen> {
     await dbHelper.updateChapter(updatedChapter);
     widget.onChapterUpdate(updatedChapter);
     if (widget.chapter.contentType == ContentType.html) {
-      _webViewController.loadHtmlString(_getHtmlContent());
+      _webViewController.loadHtmlString(_contentController.text);
     }
     _toggleEditing();
   }
@@ -145,10 +109,10 @@ class _ChapterDetailsScreenState extends State<ChapterDetailsScreen> {
           ),
         ],
       ),
-      body: Padding(
-        padding: bodyPadding,
-        child: _isEditing
-            ? TextField(
+      body: _isEditing
+          ? Padding(
+              padding: bodyPadding,
+              child: TextField(
                 controller: _contentController,
                 maxLines: null,
                 expands: true,
@@ -156,9 +120,12 @@ class _ChapterDetailsScreenState extends State<ChapterDetailsScreen> {
                   hintText: 'Write your notes here...',
                   border: InputBorder.none,
                 ),
-              )
-            : (widget.chapter.contentType == ContentType.markdown
-                ? Markdown(
+              ),
+            )
+          : (widget.chapter.contentType == ContentType.markdown
+              ? Padding(
+                  padding: bodyPadding,
+                  child: Markdown(
                     data: _contentController.text,
                     styleSheet: MarkdownStyleSheet.fromTheme(Theme.of(context)).copyWith(
                       p: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 16),
@@ -169,9 +136,9 @@ class _ChapterDetailsScreenState extends State<ChapterDetailsScreen> {
                         borderRadius: BorderRadius.circular(8),
                       ),
                     ),
-                  )
-                : WebViewWidget(controller: _webViewController)),
-      ),
+                  ),
+                )
+              : WebViewWidget(controller: _webViewController)),
     );
   }
 }

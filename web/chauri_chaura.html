@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<title>चौरी-चौरा कांड</title>
+
+<!-- Google Font -->
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
+
+<style>
+body{
+    margin:0;
+    padding:0;
+    background: linear-gradient(120deg,#0f2027,#203a43,#2c5364);
+    font-family: 'Noto Serif Devanagari', serif;
+    color:#f5f5f5;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    min-height:100vh;
+}
+
+.note{
+    width:90%;
+    max-width:900px;
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(10px);
+    border-radius:20px;
+    padding:40px;
+    box-shadow:0 0 40px rgba(0,0,0,0.4);
+    animation: slideUp 1.2s ease;
+}
+
+h1{
+    text-align:center;
+    font-size:2.5rem;
+    color:#ffd369;
+    margin-bottom:10px;
+}
+
+.date{
+    text-align:center;
+    font-style:italic;
+    color:#ddd;
+    margin-bottom:30px;
+}
+
+.section{
+    margin-bottom:25px;
+    opacity:0;
+    transform: translateY(20px);
+    transition:1s ease;
+}
+
+.section.show{
+    opacity:1;
+    transform: translateY(0);
+}
+
+.section h2{
+    color:#ffb703;
+    margin-bottom:10px;
+    border-left:4px solid #ffb703;
+    padding-left:10px;
+}
+
+.section p{
+    line-height:1.8;
+    text-align:justify;
+}
+
+.quote{
+    text-align:center;
+    font-size:1.2rem;
+    margin-top:30px;
+    color:#90dbf4;
+    animation: glow 2.5s infinite alternate;
+}
+
+@keyframes slideUp{
+    from{opacity:0; transform:translateY(60px);}
+    to{opacity:1; transform:translateY(0);}
+}
+
+@keyframes glow{
+    from{text-shadow:0 0 5px #90dbf4;}
+    to{text-shadow:0 0 20px #90dbf4;}
+}
+</style>
+</head>
+
+<body>
+
+<div class="note">
+    <h1>🕊️ चौरी-चौरा कांड</h1>
+    <div class="date">(4 फ़रवरी 1922)</div>
+
+    <div class="section">
+        <h2>पृष्ठभूमि</h2>
+        <p>
+            चौरी-चौरा कांड भारतीय स्वतंत्रता संग्राम का वह क्षण है जहाँ जन-आक्रोश और
+            अन्याय के विरुद्ध संघर्ष अपने चरम पर पहुँच गया। ब्रिटिश शासन की
+            दमनकारी नीतियों के विरोध में असहयोग आंदोलन पूरे देश में फैल चुका था।
+        </p>
+    </div>
+
+    <div class="section">
+        <h2>घटना</h2>
+        <p>
+            4 फ़रवरी 1922 को चौरी-चौरा में शांतिपूर्ण प्रदर्शन कर रहे लोगों पर
+            पुलिस ने लाठीचार्ज किया। इससे क्रोधित भीड़ ने पुलिस थाने को आग के
+            हवाले कर दिया, जिसमें 22 पुलिसकर्मियों की मृत्यु हो गई।
+        </p>
+    </div>
+
+    <div class="section">
+        <h2>परिणाम</h2>
+        <p>
+            इस हिंसक घटना से महात्मा गांधी अत्यंत दुखी हुए और उन्होंने असहयोग
+            आंदोलन को वापस लेने का ऐतिहासिक निर्णय लिया। यह निर्णय अहिंसा के प्रति
+            उनकी अटूट आस्था को दर्शाता है।
+        </p>
+    </div>
+
+    <div class="section">
+        <h2>ऐतिहासिक महत्व</h2>
+        <p>
+            चौरी-चौरा कांड ने यह सिखाया कि स्वतंत्रता का मार्ग केवल लक्ष्य तक
+            पहुँचने का नहीं, बल्कि नैतिक मूल्यों और संयम का भी होना चाहिए।
+        </p>
+    </div>
+
+    <div class="quote">
+        “अहिंसा केवल नीति नहीं, बल्कि मानवता की सबसे बड़ी शक्ति है।”
+    </div>
+</div>
+
+<script>
+const sections = document.querySelectorAll('.section');
+
+window.addEventListener('scroll',()=>{
+    sections.forEach(sec=>{
+        const top = sec.getBoundingClientRect().top;
+        if(top < window.innerHeight - 80){
+            sec.classList.add('show');
+        }
+    });
+});
+
+// auto show on load (mobile friendly)
+setTimeout(()=>{
+    sections.forEach((sec,i)=>{
+        setTimeout(()=>sec.classList.add('show'), i*400);
+    });
+},300);
+</script>
+
+</body>
+</html>
